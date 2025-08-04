@@ -156,16 +156,16 @@
 
         .action-buttons {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             margin-top: 15px;
         }
 
         .btn {
             flex: 1;
-            padding: 12px;
+            padding: 10px 8px;
             border: none;
             border-radius: 8px;
-            font-size: 14px;
+            font-size: 12px;
             font-weight: bold;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -174,7 +174,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 4px;
+            min-height: 40px;
         }
 
         .btn-directions {
@@ -197,8 +198,18 @@
             transform: translateY(-2px);
         }
 
+        .btn-whatsapp {
+            background: linear-gradient(135deg, #25d366, #128c7e);
+            color: white;
+        }
+
+        .btn-whatsapp:hover {
+            background: linear-gradient(135deg, #128c7e, #075e54);
+            transform: translateY(-2px);
+        }
+
         .icon {
-            font-size: 16px;
+            font-size: 14px;
         }
 
         .no-results {
@@ -248,10 +259,13 @@
             
             .action-buttons {
                 flex-direction: column;
+                gap: 8px;
             }
             
             .btn {
-                margin-bottom: 8px;
+                margin-bottom: 0;
+                font-size: 14px;
+                padding: 12px;
             }
         }
     </style>
@@ -287,31 +301,50 @@
     <script>
         const doctors = [
             {
-                name: "الدكتور",
-                specialty: "التخصص",
-                address: "العنوان، المغرب",
-                phone: "+21250000000",
-                coordinates: "العنوان، المغرب"
+                name: "الدكتور ",
+                specialty: "أخصائي ",
+                address: "المغرب",
+                phone: "+212 000000 ",
+                whatsapp: "+212 000000",
+                coordinates: "المغرب"
             },
             {
-                 name: "الدكتور",
-                specialty: "التخصص",
-                address: "العنوان، المغرب",
-                phone: "+21250000000",
-                coordinates: "العنوان، المغرب"
-            },
-            {
-                 name: "الدكتور",
-                specialty: "التخصص",
-                address: "العنوان، المغرب",
-                phone: "+21250000000",
-                coordinates: "العنوان، المغرب"
-            
+                name: "الدكتورة خديجة أبراري",
+                specialty: "أخصائية أمراض الجهاز الهضمي",
+                address: "شارع ابن تاشفين ، إقامة فاطمة الزهراء الطابق 4 رقم 12 فوق البريدالحي المحمدي 20022 الدار البيضاء المغرب",
+                phone: "+212 522 62 28 98",
+                whatsapp: "+212 522 62 28 98",
+                coordinates: "شارع ابن تاشفين ، إقامة فاطمة الزهراء رقم 12 فوق البريد الحي المحمدي20022 الدار البيضاء المغرب"
+
             }
-            
         ];
 
+        // دالة لتطبيع النص للبحث (إزالة الهمزات والتشكيل)
+        function normalizeText(text) {
+            return text
+                .replace(/[أإآا]/g, 'ا')
+                .replace(/[ؤو]/g, 'و')
+                .replace(/[ئي]/g, 'ي')
+                .replace(/[ة]/g, 'ه')
+                .replace(/[ً ٌ ٍ َ ُ ِ ّ ْ]/g, '')
+                .toLowerCase();
+        }
+
+        // دالة لترتيب الأسماء العربية أبجدياً
+        function sortDoctorsAlphabetically(doctors) {
+            return [...doctors].sort((a, b) => {
+                // استخراج الاسم الأول بعد "الدكتور" أو "الدكتورة"
+                const nameA = a.name.replace(/^الدكتورة?\s+/, '').trim();
+                const nameB = b.name.replace(/^الدكتورة?\s+/, '').trim();
+                
+                return nameA.localeCompare(nameB, 'ar', { sensitivity: 'base' });
+            });
+        }
+
         function createDoctorCard(doctor) {
+            // تنظيف رقم الواتساب
+            const whatsappNumber = doctor.whatsapp.replace(/\s+/g, '').replace(/^\+/, '');
+            
             return `
                 <div class="doctor-card">
                     <div class="doctor-info">
@@ -322,11 +355,15 @@
                             <a href="https://www.google.com/maps/dir/?api=1&destination=${doctor.coordinates}" 
                                target="_blank" class="btn btn-directions">
                                 <span class="icon">🗺️</span>
-                                الاتجاهات
+                                اتجاهات
                             </a>
                             <a href="tel:${doctor.phone}" class="btn btn-phone">
                                 <span class="icon">📞</span>
                                 اتصال
+                            </a>
+                            <a href="https://wa.me/${whatsappNumber}" target="_blank" class="btn btn-whatsapp">
+                                <span class="icon">💬</span>
+                                واتساب
                             </a>
                         </div>
                     </div>
@@ -348,16 +385,24 @@
         }
 
         function filterDoctors(searchTerm) {
-            const filtered = doctors.filter(doctor => 
-                doctor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                doctor.specialty.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                doctor.address.toLowerCase().includes(searchTerm.toLowerCase())
-            );
+            const normalizedSearchTerm = normalizeText(searchTerm);
+            
+            const filtered = doctors.filter(doctor => {
+                const normalizedName = normalizeText(doctor.name);
+                const normalizedSpecialty = normalizeText(doctor.specialty);
+                const normalizedAddress = normalizeText(doctor.address);
+                
+                return normalizedName.includes(normalizedSearchTerm) ||
+                       normalizedSpecialty.includes(normalizedSearchTerm) ||
+                       normalizedAddress.includes(normalizedSearchTerm);
+            });
+            
             displayDoctors(filtered);
         }
 
-        // Initialize the page
-        displayDoctors(doctors);
+        // Initialize the page with alphabetically sorted doctors
+        const sortedDoctors = sortDoctorsAlphabetically(doctors);
+        displayDoctors(sortedDoctors);
 
         // Search functionality
         document.getElementById('searchInput').addEventListener('input', function(e) {
